@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -401,7 +400,7 @@ const SDGForm = () => {
                     <>
                       <Send className="mr-2 h-4 w-4" />
                       Submit Activity Report
-                    <//>
+                    </>
                   )}
                 </Button>
               </div>
