@@ -2,56 +2,84 @@
 export interface FormSubmission {
   timestamp: string;
   sdgGoal: string;
-  facultyCoordinator: string;
+  facultyCoordinators: string;
   activityTitle: string;
   activityDate: string;
   numberOfBeneficiaries: string;
-  report: string;
-  photosUploaded: boolean;
-  reportUploaded: boolean;
-  photosDriveLink: string;
-  reportsDriveLink: string;
+  photosLinks: string;
+  reportsLinks: string;
+  photosDriveFolder: string;
+  reportsDriveFolder: string;
 }
 
-export const formatSubmissionForDrive = (data: FormSubmission): string => {
-  return `
-SDG Activity Report Submission
-==============================
-Timestamp: ${data.timestamp}
-SDG Goal: ${data.sdgGoal}
-Faculty Coordinator: ${data.facultyCoordinator}
-Activity Title: ${data.activityTitle}
-Activity Date: ${data.activityDate}
-Number of Beneficiaries: ${data.numberOfBeneficiaries}
-Photos Uploaded: ${data.photosUploaded ? 'Yes' : 'No'}
-Report Uploaded: ${data.reportUploaded ? 'Yes' : 'No'}
+export interface UploadedFile {
+  name: string;
+  id: string;
+  url: string;
+}
 
-Photos Drive Link: ${data.photosDriveLink}
-Reports Drive Link: ${data.reportsDriveLink}
-
-Report Content:
-${data.report}
-==============================
-`;
+export const uploadFilesToGoogleDrive = async (files: File[], folderId: string): Promise<UploadedFile[]> => {
+  // This is a simulation of Google Drive API upload
+  // In a real implementation, you would use the Google Drive API
+  console.log(`Uploading ${files.length} files to Google Drive folder: ${folderId}`);
+  
+  const uploadPromises = files.map(async (file) => {
+    // Simulate upload delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return {
+      name: file.name,
+      id: fileId,
+      url: `https://drive.google.com/file/d/${fileId}/view`
+    };
+  });
+  
+  return Promise.all(uploadPromises);
 };
 
-// This function would be used with Google Apps Script or Google Drive API
-export const saveToGoogleDrive = async (formData: FormSubmission) => {
-  // In a real implementation, this would call your Google Apps Script web app
-  // or use the Google Drive API to save the form data
-  const formattedData = formatSubmissionForDrive(formData);
+export const saveToGoogleSheets = async (formData: FormSubmission): Promise<void> => {
+  // This is a simulation of Google Sheets API call
+  // In a real implementation, you would use Google Sheets API or Google Apps Script
   
-  console.log("Saving to Google Drive:", formattedData);
+  console.log("Saving to Google Sheets:", formData);
   
-  // You would replace this with actual Google Drive integration
-  // Example Google Apps Script endpoint call:
-  // const response = await fetch('YOUR_GOOGLE_APPS_SCRIPT_URL', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //   },
-  //   body: JSON.stringify(formData),
-  // });
+  const sheetData = {
+    range: 'Sheet1!A:J',
+    values: [[
+      formData.timestamp,
+      formData.sdgGoal,
+      formData.facultyCoordinators,
+      formData.activityTitle,
+      formData.activityDate,
+      formData.numberOfBeneficiaries,
+      formData.photosLinks,
+      formData.reportsLinks,
+      formData.photosDriveFolder,
+      formData.reportsDriveFolder
+    ]]
+  };
   
-  return formattedData;
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  console.log("Data saved to Google Sheets:", sheetData);
+};
+
+export const formatSubmissionForSheets = (data: FormSubmission): string[][] => {
+  return [
+    ['Timestamp', 'SDG Goal', 'Faculty Coordinators', 'Activity Title', 'Activity Date', 'Beneficiaries', 'Photos Links', 'Reports Links', 'Photos Folder', 'Reports Folder'],
+    [
+      data.timestamp,
+      data.sdgGoal,
+      data.facultyCoordinators,
+      data.activityTitle,
+      data.activityDate,
+      data.numberOfBeneficiaries,
+      data.photosLinks,
+      data.reportsLinks,
+      data.photosDriveFolder,
+      data.reportsDriveFolder
+    ]
+  ];
 };

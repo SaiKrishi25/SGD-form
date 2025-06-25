@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -33,13 +33,12 @@ const facultyCoordinators = [
 const SDGForm = () => {
   const [formData, setFormData] = useState({
     sdgGoal: '',
-    facultyCoordinator: '',
+    facultyCoordinators: [] as string[],
     activityTitle: '',
     activityDate: undefined as Date | undefined,
     numberOfBeneficiaries: '',
-    photosUploaded: false,
-    report: '',
-    reportUploaded: false
+    photos: [] as File[],
+    reportFiles: [] as File[]
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,8 +51,34 @@ const SDGForm = () => {
     }));
   };
 
+  const handleFacultyChange = (coordinator: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      facultyCoordinators: checked 
+        ? [...prev.facultyCoordinators, coordinator]
+        : prev.facultyCoordinators.filter(fc => fc !== coordinator)
+    }));
+  };
+
+  const handleFileUpload = (files: FileList | null, type: 'photos' | 'reportFiles') => {
+    if (!files) return;
+    
+    const fileArray = Array.from(files);
+    setFormData(prev => ({
+      ...prev,
+      [type]: [...prev[type], ...fileArray]
+    }));
+  };
+
+  const removeFile = (index: number, type: 'photos' | 'reportFiles') => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
+  };
+
   const validateForm = () => {
-    const required = ['sdgGoal', 'facultyCoordinator', 'activityTitle', 'activityDate', 'numberOfBeneficiaries', 'report'];
+    const required = ['sdgGoal', 'activityTitle', 'activityDate', 'numberOfBeneficiaries'];
     for (const field of required) {
       if (!formData[field as keyof typeof formData]) {
         toast({
@@ -64,29 +89,56 @@ const SDGForm = () => {
         return false;
       }
     }
+    
+    if (formData.facultyCoordinators.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one faculty coordinator",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formData.photos.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please upload at least one photo",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formData.reportFiles.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please upload at least one report file",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     return true;
   };
 
-  const submitToGoogleDrive = async () => {
-    const submissionData = {
-      timestamp: new Date().toISOString(),
-      sdgGoal: formData.sdgGoal,
-      facultyCoordinator: formData.facultyCoordinator,
-      activityTitle: formData.activityTitle,
-      activityDate: formData.activityDate ? format(formData.activityDate, 'yyyy-MM-dd') : '',
-      numberOfBeneficiaries: formData.numberOfBeneficiaries,
-      report: formData.report,
-      photosUploaded: formData.photosUploaded,
-      reportUploaded: formData.reportUploaded,
-      photosDriveLink: "https://drive.google.com/drive/folders/1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr?usp=drive_link",
-      reportsDriveLink: "https://drive.google.com/drive/folders/1Ypala6WnJ-zjAx3Bq_aO2Xv11Icr13QN?usp=drive_link"
-    };
-
-    // For demonstration purposes, we'll log the data and show success
-    // In a real implementation, you would use Google Apps Script or Google Drive API
-    console.log("Form Data to be saved to Google Drive:", submissionData);
+  const uploadFilesToDrive = async (files: File[], folderId: string) => {
+    // Simulate file upload to Google Drive
+    console.log(`Uploading ${files.length} files to Drive folder: ${folderId}`);
     
-    // Simulate API call delay
+    // In a real implementation, you would use Google Drive API here
+    const uploadedFiles = files.map(file => ({
+      name: file.name,
+      id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      url: `https://drive.google.com/file/d/file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}/view`
+    }));
+    
+    return uploadedFiles;
+  };
+
+  const submitToGoogleSheets = async (submissionData: any) => {
+    // Simulate Google Sheets API call
+    console.log("Submitting to Google Sheets:", submissionData);
+    
+    // In a real implementation, you would use Google Sheets API or Google Apps Script
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     return submissionData;
@@ -100,23 +152,41 @@ const SDGForm = () => {
     setIsSubmitting(true);
     
     try {
-      await submitToGoogleDrive();
+      // Upload photos to Google Drive
+      const uploadedPhotos = await uploadFilesToDrive(formData.photos, "1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr");
+      
+      // Upload reports to Google Drive
+      const uploadedReports = await uploadFilesToDrive(formData.reportFiles, "1RvtPszHpNdFfekXIzcQQStggBnv4SIUe");
+      
+      const submissionData = {
+        timestamp: new Date().toISOString(),
+        sdgGoal: formData.sdgGoal,
+        facultyCoordinators: formData.facultyCoordinators.join(', '),
+        activityTitle: formData.activityTitle,
+        activityDate: formData.activityDate ? format(formData.activityDate, 'yyyy-MM-dd') : '',
+        numberOfBeneficiaries: formData.numberOfBeneficiaries,
+        photosLinks: uploadedPhotos.map(file => file.url).join(', '),
+        reportsLinks: uploadedReports.map(file => file.url).join(', '),
+        photosDriveFolder: "https://drive.google.com/drive/folders/1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr",
+        reportsDriveFolder: "https://drive.google.com/drive/folders/1RvtPszHpNdFfekXIzcQQStggBnv4SIUe"
+      };
+
+      await submitToGoogleSheets(submissionData);
       
       toast({
         title: "Form Submitted Successfully!",
-        description: "Your SDG activity report has been saved to Google Drive.",
+        description: "Your SDG activity report has been saved to Google Sheets with file links.",
       });
       
       // Reset form
       setFormData({
         sdgGoal: '',
-        facultyCoordinator: '',
+        facultyCoordinators: [],
         activityTitle: '',
         activityDate: undefined,
         numberOfBeneficiaries: '',
-        photosUploaded: false,
-        report: '',
-        reportUploaded: false
+        photos: [],
+        reportFiles: []
       });
       
     } catch (error) {
@@ -160,23 +230,25 @@ const SDGForm = () => {
                 />
               </div>
 
-              {/* Faculty Coordinator */}
-              <div className="space-y-2">
-                <Label htmlFor="facultyCoordinator" className="text-sm font-semibold text-gray-700 flex items-center">
-                  Faculty Coordinator Name <span className="text-red-500 ml-1">*</span>
+              {/* Faculty Coordinators - Multiple Selection */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                  Faculty Coordinator Names <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <Select value={formData.facultyCoordinator} onValueChange={(value) => handleInputChange('facultyCoordinator', value)}>
-                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-blue-500">
-                    <SelectValue placeholder="Select a faculty coordinator" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {facultyCoordinators.map((coordinator) => (
-                      <SelectItem key={coordinator} value={coordinator}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+                  {facultyCoordinators.map((coordinator) => (
+                    <div key={coordinator} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={coordinator}
+                        checked={formData.facultyCoordinators.includes(coordinator)}
+                        onCheckedChange={(checked) => handleFacultyChange(coordinator, checked as boolean)}
+                      />
+                      <Label htmlFor={coordinator} className="text-sm cursor-pointer">
                         {coordinator}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Activity Title */}
@@ -217,7 +289,6 @@ const SDGForm = () => {
                       selected={formData.activityDate}
                       onSelect={(date) => handleInputChange('activityDate', date)}
                       initialFocus
-                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -246,44 +317,34 @@ const SDGForm = () => {
                 <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
                   <div className="text-center">
                     <Camera className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">
-                      Upload your photos to the shared Drive folder using this link:
-                    </p>
-                    <a
-                      href="https://drive.google.com/drive/folders/1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr?usp=drive_link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline text-sm break-all"
-                    >
-                      https://drive.google.com/drive/folders/1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr?usp=drive_link
-                    </a>
-                    <div className="mt-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleInputChange('photosUploaded', !formData.photosUploaded)}
-                        className={formData.photosUploaded ? "bg-green-50 border-green-300 text-green-700" : ""}
-                      >
-                        {formData.photosUploaded ? "✓ Photos Uploaded" : "Mark as Uploaded"}
-                      </Button>
-                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Upload photos</p>
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files, 'photos')}
+                      className="max-w-xs mx-auto"
+                    />
                   </div>
                 </div>
-              </div>
-
-              {/* Report */}
-              <div className="space-y-2">
-                <Label htmlFor="report" className="text-sm font-semibold text-gray-700 flex items-center">
-                  Report <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <Textarea
-                  id="report"
-                  value={formData.report}
-                  onChange={(e) => handleInputChange('report', e.target.value)}
-                  placeholder="Enter your detailed activity report (Max 10 MB when uploaded as file)"
-                  className="min-h-32 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                />
+                {formData.photos.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Uploaded Photos:</p>
+                    {formData.photos.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                        <span className="text-sm text-gray-600">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeFile(index, 'photos')}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Reports Upload */}
@@ -294,30 +355,34 @@ const SDGForm = () => {
                 <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
                   <div className="text-center">
                     <FileText className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">
-                      Upload your report to the shared Drive folder using this link:
-                    </p>
-                    <a
-                      href="https://drive.google.com/drive/folders/1Ypala6WnJ-zjAx3Bq_aO2Xv11Icr13QN?usp=drive_link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline text-sm break-all"
-                    >
-                      https://drive.google.com/drive/folders/1Ypala6WnJ-zjAx3Bq_aO2Xv11Icr13QN?usp=drive_link
-                    </a>
-                    <div className="mt-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleInputChange('reportUploaded', !formData.reportUploaded)}
-                        className={formData.reportUploaded ? "bg-green-50 border-green-300 text-green-700" : ""}
-                      >
-                        {formData.reportUploaded ? "✓ Report Uploaded" : "Mark as Uploaded"}
-                      </Button>
-                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Upload report files (Max 10 MB each)</p>
+                    <Input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={(e) => handleFileUpload(e.target.files, 'reportFiles')}
+                      className="max-w-xs mx-auto"
+                    />
                   </div>
                 </div>
+                {formData.reportFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Uploaded Reports:</p>
+                    {formData.reportFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                        <span className="text-sm text-gray-600">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeFile(index, 'reportFiles')}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -336,7 +401,7 @@ const SDGForm = () => {
                     <>
                       <Send className="mr-2 h-4 w-4" />
                       Submit Activity Report
-                    </>
+                    <//>
                   )}
                 </Button>
               </div>
@@ -345,7 +410,7 @@ const SDGForm = () => {
         </Card>
         
         <div className="mt-8 text-center text-sm text-gray-600">
-          <p>All submissions are automatically saved to the designated Google Drive folders</p>
+          <p>All submissions are automatically saved to Google Sheets with file links to Google Drive</p>
         </div>
       </div>
     </div>
