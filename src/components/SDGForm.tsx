@@ -151,10 +151,8 @@ const SDGForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Upload photos to Google Drive
-      const uploadedPhotos = await uploadFilesToDrive(formData.photos, "1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr");
-      
-      // Upload reports to Google Drive
+      // Upload both photos and reports to the same Google Drive folder
+      const uploadedPhotos = await uploadFilesToDrive(formData.photos, "1RvtPszHpNdFfekXIzcQQStggBnv4SIUe");
       const uploadedReports = await uploadFilesToDrive(formData.reportFiles, "1RvtPszHpNdFfekXIzcQQStggBnv4SIUe");
       
       const submissionData = {
@@ -166,8 +164,7 @@ const SDGForm = () => {
         numberOfBeneficiaries: formData.numberOfBeneficiaries,
         photosLinks: uploadedPhotos.map(file => file.url).join(', '),
         reportsLinks: uploadedReports.map(file => file.url).join(', '),
-        photosDriveFolder: "https://drive.google.com/drive/folders/1fcE99gBJ0do-sMg3mRY9cM3hEl-ymUPr",
-        reportsDriveFolder: "https://drive.google.com/drive/folders/1RvtPszHpNdFfekXIzcQQStggBnv4SIUe"
+        driveFolder: "https://drive.google.com/drive/folders/1RvtPszHpNdFfekXIzcQQStggBnv4SIUe?usp=drive_link"
       };
 
       await submitToGoogleSheets(submissionData);

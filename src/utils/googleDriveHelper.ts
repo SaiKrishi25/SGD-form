@@ -1,4 +1,3 @@
-
 export interface FormSubmission {
   timestamp: string;
   sdgGoal: string;
@@ -8,8 +7,7 @@ export interface FormSubmission {
   numberOfBeneficiaries: string;
   photosLinks: string;
   reportsLinks: string;
-  photosDriveFolder: string;
-  reportsDriveFolder: string;
+  driveFolder: string;
 }
 
 export interface UploadedFile {
@@ -55,8 +53,7 @@ export const saveToGoogleSheets = async (formData: FormSubmission): Promise<void
       formData.numberOfBeneficiaries,
       formData.photosLinks,
       formData.reportsLinks,
-      formData.photosDriveFolder,
-      formData.reportsDriveFolder
+      formData.driveFolder
     ]]
   };
   
@@ -68,7 +65,7 @@ export const saveToGoogleSheets = async (formData: FormSubmission): Promise<void
 
 export const formatSubmissionForSheets = (data: FormSubmission): string[][] => {
   return [
-    ['Timestamp', 'SDG Goal', 'Faculty Coordinators', 'Activity Title', 'Activity Date', 'Beneficiaries', 'Photos Links', 'Reports Links', 'Photos Folder', 'Reports Folder'],
+    ['Timestamp', 'SDG Goal', 'Faculty Coordinators', 'Activity Title', 'Activity Date', 'Beneficiaries', 'Photos Links', 'Reports Links', 'Drive Folder'],
     [
       data.timestamp,
       data.sdgGoal,
@@ -78,8 +75,7 @@ export const formatSubmissionForSheets = (data: FormSubmission): string[][] => {
       data.numberOfBeneficiaries,
       data.photosLinks,
       data.reportsLinks,
-      data.photosDriveFolder,
-      data.reportsDriveFolder
+      data.driveFolder
     ]
   ];
 };
